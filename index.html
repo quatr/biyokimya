@@ -27,7 +27,6 @@
     .actions{display:flex;gap:8px;margin-top:12px}
     button{background:var(--accent);border:none;padding:10px 12px;border-radius:8px;color:#042027;cursor:pointer}
     button.ghost{background:transparent;border:1px solid rgba(255,255,255,.06);color:var(--muted)}
-    textarea{width:100%;height:120px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.03);background:transparent;color:inherit}
     .disclaimer{font-size:12px;color:#ffc9c9;margin-top:12px}
     footer{display:none}
     @media(max-width:880px){.grid{grid-template-columns:1fr}}
@@ -36,26 +35,15 @@
 <body>
   <div class="container">
     <header>
-      <div>
-        <h1>Biyokimyasal Test Yorumlayıcı</h1>
-      </div>
+      <h1>Biyokimyasal Test Yorumlayıcı</h1>
     </header>
 
     <div class="grid">
       <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px">
-          <strong>Testler</strong>
-          <div style="display:flex;gap:8px">
-            <button id="addTestBtn" class="ghost">Yeni Test Ekle</button>
-            <button id="loadDefaults">Örnek Yükle</button>
-          </div>
-        </div>
-
         <div class="tests-list" id="testsList"></div>
 
         <div class="actions">
           <button id="analyzeBtn">Sonuçları Yorumla</button>
-          <button id="exportBtn" class="ghost">Sonuçları Kopyala</button>
         </div>
 
         <div class="disclaimer card" style="background:transparent;padding:0;border-radius:0">
@@ -70,26 +58,16 @@
             <p style="color:var(--muted)">Henüz analiz yapılmadı.</p>
           </div>
         </div>
-
-        <div class="card" style="margin-top:12px">
-          <strong>Ham JSON (Yönetici İçin)</strong>
-          <p style="color:var(--muted);font-size:13px;margin:6px 0">Aşağıdaki JSON ile hangi testlerin gösterileceğini değiştirebilirsiniz.</p>
-          <textarea id="configJson"></textarea>
-          <div style="display:flex;gap:8px;margin-top:8px">
-            <button id="applyConfig">Uygula</button>
-            <button id="resetConfig" class="ghost">Sıfırla</button>
-          </div>
-        </div>
       </div>
     </div>
   </div>
 
   <script>
     const defaultConfig = [
-      {key:'glukoz', label:'Açlık plazma glukozu', unit:'mg/dL', ref:{low:70, high:100}, risk:{high:'Diyabet tanısı için ≥ 126 mg/dL eşik olarak kullanılır.'}},
+      {key:'glukoz', label:'Açlık plazma glukozu', unit:'mg/dL', ref:{low:70, high:100}, risk:{high:'Prediyabet veya diyabet riski olabilir.'}},
       {key:'ure', label:'Üre (BUN)', unit:'mg/dL', ref:{low:10, high:50}, risk:{high:'Böbrek fonksiyonu ve protein yıkımı göstergesi.'}},
-      {key:'kreatinin', label:'Kreatinin', unit:'mg/dL', ref:{low:0.6, high:1.3}, risk:{high:'Böbrek atılım kapasitesini gösterir.'}},
-      {key:'urikAsit', label:'Ürik asit', unit:'mg/dL', ref:{low:3.5, high:7.2}, risk:{high:'Metabolik ve böbrek durumu ile ilgili.'}},
+      {key:'kreatinin', label:'Kreatinin', unit:'mg/dL', ref:{low:0.6, high:1.3}, risk:{high:'Böbrek atılım kapasitesi azalmış olabilir.'}},
+      {key:'urikAsit', label:'Ürik asit', unit:'mg/dL', ref:{low:3.5, high:7.2}, risk:{high:'Gut veya böbrek taşı riski olabilir.'}},
       {key:'totalProtein', label:'Total protein', unit:'g/dL', ref:{low:6.4, high:8.3}},
       {key:'albumin', label:'Albumin', unit:'g/dL', ref:{low:3.5, high:5.0}},
       {key:'alt', label:'ALT (alanin aminotransferaz)', unit:'U/L', ref:{low:0, high:45}},
@@ -117,64 +95,75 @@
 
     function renderTests(config){
       const list = el('testsList'); list.innerHTML='';
-      config.forEach((t, idx)=>{
+      config.forEach((t)=>{
         const row = document.createElement('div'); row.className='test-row';
         row.innerHTML = `
           <div class="meta">
             <label>${t.label} <span class="badge">${t.unit||''} • Ref: ${t.ref.low} - ${t.ref.high}</span></label>
             <input type="number" step="any" data-key="${t.key}" placeholder="${t.label} değerini girin">
           </div>
-          <div style="width:120px;text-align:right">
-            <button class="ghost" data-idx="${idx}" onclick="removeTest(${idx})">Sil</button>
-          </div>
         `;
         list.appendChild(row);
       })
     }
 
-    function removeTest(i){ config.splice(i,1); renderTests(config); updateConfigTextarea(); }
-    function updateConfigTextarea(){ el('configJson').value = JSON.stringify(config, null, 2); }
+    renderTests(defaultConfig);
 
-    let config = JSON.parse(JSON.stringify(defaultConfig));
-    window.addEventListener('DOMContentLoaded',()=>{
-      renderTests(config);
-      updateConfigTextarea();
-    });
-
-    el('loadDefaults').addEventListener('click',()=>{config = JSON.parse(JSON.stringify(defaultConfig));renderTests(config);updateConfigTextarea();});
-    el('addTestBtn').addEventListener('click',()=>{const key = 'test_'+Date.now(); config.push({key,label:'Yeni Test',unit:'',ref:{low:0,high:0},risk:{}}); renderTests(config); updateConfigTextarea();});
-    el('applyConfig').addEventListener('click',()=>{try{const parsed = JSON.parse(el('configJson').value); if(!Array.isArray(parsed)) throw new Error('JSON dizi olmalı'); config = parsed.map((t,i)=>({ key: t.key || ('t'+i), label: t.label||t.key||('Test '+(i+1)), unit:t.unit||'', ref:{low:Number((t.ref&&t.ref.low)||0), high: Number((t.ref&&t.ref.high)||0)}, risk: t.risk||{} })); renderTests(config); alert('Konfigürasyon uygulandı.');}catch(e){alert('JSON parse hatası: '+e.message)}});
-    el('resetConfig').addEventListener('click',()=>{if(confirm('Varsayılanlara dönülsün mü?')){config = JSON.parse(JSON.stringify(defaultConfig));renderTests(config);updateConfigTextarea();}});
-
-    el('analyzeBtn').addEventListener('click',()=>{
+    function analyze(){
       const inputs = document.querySelectorAll('#testsList input[type=number]');
-      const results = [];
+      let results=[];
+      let missing=false;
+      const values={};
+
       inputs.forEach(inp=>{
-        const key = inp.dataset.key; const val = inp.value.trim();
-        const t = config.find(x=>x.key==key); if(!t) return;
+        const key = inp.dataset.key;
+        const val = inp.value.trim();
+        const t = defaultConfig.find(x=>x.key==key);
+        if(!t) return;
         const num = val===''?null:Number(val);
-        let status='normal'; let note='Değer normal referans aralığında.';
-        if(num===null){status='missing'; note='Değer girilmemiş.'}
-        else if(t.ref.high>t.ref.low){ if(num < t.ref.low) {status='low'; note = t.risk && t.risk.low ? t.risk.low : 'Referans aralığının altında.'} else if(num > t.ref.high) {status='high'; note = t.risk && t.risk.high ? t.risk.high : 'Referans aralığının üstünde.'} } else { note='Referans aralığı tanımlı değil.' }
-        results.push({key:t.key,label:t.label,unit:t.unit,value:num,status,note,ref:t.ref});
+        values[key]=num;
+        let status='normal', note='Değer normal referans aralığında.';
+        if(num===null){missing=true; return;}
+        if(t.ref.high>t.ref.low){
+          if(num < t.ref.low){status='low'; note=t.risk && t.risk.low ? t.risk.low:'Referans aralığının altında.';}
+          else if(num > t.ref.high){status='high'; note=t.risk && t.risk.high ? t.risk.high:'Referans aralığının üstünde.';}
+        }
+        results.push({label:t.label, value:num, unit:t.unit, status, note});
       });
-      const summaryArea = el('summaryArea'); summaryArea.innerHTML='';
-      if(results.length===0){summaryArea.innerHTML='<p style="color:var(--muted)">Hiç test değeri girilmedi.</p>'; return}
-      results.forEach(r=>{const div = document.createElement('div'); div.className='result ' + (r.status=='high'?'bad':(r.status=='low'?'warn':'good')); div.innerHTML = `<strong>${r.label}</strong><div style="margin-top:6px;color:var(--muted);font-size:13px">Girilen: ${r.value===null?'<em>—</em>':r.value+' '+(r.unit||'')} • Referans: ${r.ref.low} - ${r.ref.high}</div><div style="margin-top:8px">${r.note}</div>`; summaryArea.appendChild(div);});
-      const anyAbnormal = results.some(x=>x.status==='high' || x.status==='low');
-      const adv = document.createElement('div'); adv.style.marginTop='10px'; adv.style.color='var(--muted)';
-      adv.innerHTML = anyAbnormal ? '<strong>Öneri:</strong> Bir veya daha fazla değer referansın dışındadır. Lütfen klinik öykü ve fizik muayene ile birlikte hekiminize başvurunuz.' : '<strong>Öneri:</strong> Tüm girilen değerler referans aralığında gözüküyor. Klinik duruma göre değerlendirme devam edebilir.';
-      summaryArea.appendChild(adv);
-      el('exportBtn').dataset.payload = JSON.stringify({timestamp:new Date().toISOString(),results}, null, 2);
-    });
 
-    el('exportBtn').addEventListener('click',()=>{
-      const payload = el('exportBtn').dataset.payload;
-      if(!payload){alert('Önce analiz yapın.');return}
-      navigator.clipboard.writeText(payload).then(()=>alert('Analiz JSON kopyalandı.')).catch(()=>{prompt('Kopyalama başarısız. Aşağıdaki JSON\'u elle kopyalayın:', payload)});
-    });
+      // Genel analiz
+      let summary='';
+      if(missing) summary+='Bazı test değerleri girilmediği için analiz sınırlı olabilir. Daha doğru sonuçlar için tüm temel testlerin eklenmesi önerilir.<br><br>';
 
-    window.removeTest = removeTest;
+      // Hastalık ilişkili yorumlar
+      const combs=[];
+      if(values.alt>45 || values.ast>35) combs.push('Karaciğer fonksiyon bozukluğu olasılığı');
+      if(values.ure>50 && values.kreatinin>1.3) combs.push('Böbrek fonksiyon bozukluğu olasılığı');
+      if(values.glukoz>100) combs.push('Prediyabet veya diyabet riski');
+      if(values.trigliserid>150 && values.hdlKolesterol<40) combs.push('Dislipidemi riski');
+      if(values.urikAsit>7.2) combs.push('Gut veya böbrek taşı riski olabilir');
+      if(values.albumin<3.5 && values.totalProtein<6.4) combs.push('Beslenme yetersizliği veya karaciğer sentez fonksiyonunda azalma');
+
+      // Sonuçları göster
+      results.forEach(r=>{
+        summary+=`<div class="result ${r.status==='high'?'bad':r.status==='low'?'warn':'good'}">
+          <strong>${r.label}:</strong> ${r.value!==null?r.value+' '+r.unit:'-'} <br>
+          <em>${r.note}</em>
+        </div>`;
+      });
+
+      if(combs.length>0){
+        summary+='<br><strong>Olası durumlar / ilişkili riskler:</strong><ul>';
+        combs.forEach(c=>summary+=`<li>${c}</li>`);
+        summary+='</ul>';
+      }
+
+      el('summaryArea').innerHTML=summary;
+    }
+
+    el('analyzeBtn').addEventListener('click',analyze);
+
   </script>
 </body>
 </html>
+
