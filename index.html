@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Biyokimyasal Test Yorumlayıcı</title>
+  <style>
+    :root{
+      --bg:#0b0f14; --card:#0f1720; --muted:#9aa5b1; --accent:#38bdf8; --good:#16a34a; --warn:#f59e0b; --bad:#ef4444;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg),#071013);color:#e6eef6}
+    .container{max-width:980px;margin:28px auto;padding:20px}
+    h1{margin:0;font-size:20px}
+    .card{background:linear-gradient(180deg,var(--card),#0b1520);padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,.6)}
+    .grid{display:grid;grid-template-columns:1fr 320px;gap:16px}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    input[type=number]{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.03);background:transparent;color:inherit}
+    .tests-list{display:grid;gap:12px}
+    .test-row{display:flex;gap:10px;align-items:center}
+    .test-row .meta{flex:1}
+    .badge{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.03);font-size:12px;color:var(--muted)}
+    .result{margin-top:12px;padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,.02),transparent)}
+    .result.good{border-left:6px solid var(--good)}
+    .result.warn{border-left:6px solid var(--warn)}
+    .result.bad{border-left:6px solid var(--bad)}
+    .actions{display:flex;gap:8px;margin-top:12px}
+    button{background:var(--accent);border:none;padding:10px 12px;border-radius:8px;color:#042027;cursor:pointer}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,.06);color:var(--muted)}
+    textarea{width:100%;height:120px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.03);background:transparent;color:inherit}
+    .disclaimer{font-size:12px;color:#ffc9c9;margin-top:12px}
+    footer{display:none}
+    @media(max-width:880px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>Biyokimyasal Test Yorumlayıcı</h1>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px">
+          <strong>Testler</strong>
+          <div style="display:flex;gap:8px">
+            <button id="addTestBtn" class="ghost">Yeni Test Ekle</button>
+            <button id="loadDefaults">Örnek Yükle</button>
+          </div>
+        </div>
+
+        <div class="tests-list" id="testsList"></div>
+
+        <div class="actions">
+          <button id="analyzeBtn">Sonuçları Yorumla</button>
+          <button id="exportBtn" class="ghost">Sonuçları Kopyala</button>
+        </div>
+
+        <div class="disclaimer card" style="background:transparent;padding:0;border-radius:0">
+          <strong>Uyarı:</strong> Bu araç yalnızca bilgilendirme amaçlıdır ve doktor teşhisinin yerini tutmaz. Anormal sonuçlar için mutlaka bir sağlık profesyoneline başvurun.
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <strong>Analiz Özeti</strong>
+          <div id="summaryArea" style="margin-top:10px">
+            <p style="color:var(--muted)">Henüz analiz yapılmadı.</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <strong>Ham JSON (Yönetici İçin)</strong>
+          <p style="color:var(--muted);font-size:13px;margin:6px 0">Aşağıdaki JSON ile hangi testlerin gösterileceğini değiştirebilirsiniz.</p>
+          <textarea id="configJson"></textarea>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="applyConfig">Uygula</button>
+            <button id="resetConfig" class="ghost">Sıfırla</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const defaultConfig = [
+      {key:'glukoz', label:'Açlık plazma glukozu', unit:'mg/dL', ref:{low:70, high:100}, risk:{high:'Diyabet tanısı için ≥ 126 mg/dL eşik olarak kullanılır.'}},
+      {key:'ure', label:'Üre (BUN)', unit:'mg/dL', ref:{low:10, high:50}, risk:{high:'Böbrek fonksiyonu ve protein yıkımı göstergesi.'}},
+      {key:'kreatinin', label:'Kreatinin', unit:'mg/dL', ref:{low:0.6, high:1.3}, risk:{high:'Böbrek atılım kapasitesini gösterir.'}},
+      {key:'urikAsit', label:'Ürik asit', unit:'mg/dL', ref:{low:3.5, high:7.2}, risk:{high:'Metabolik ve böbrek durumu ile ilgili.'}},
+      {key:'totalProtein', label:'Total protein', unit:'g/dL', ref:{low:6.4, high:8.3}},
+      {key:'albumin', label:'Albumin', unit:'g/dL', ref:{low:3.5, high:5.0}},
+      {key:'alt', label:'ALT (alanin aminotransferaz)', unit:'U/L', ref:{low:0, high:45}},
+      {key:'ast', label:'AST (aspartat aminotransferaz)', unit:'U/L', ref:{low:0, high:35}},
+      {key:'ggt', label:'GGT (gamma-glutamil transferaz)', unit:'U/L', ref:{low:0, high:55}},
+      {key:'alp', label:'ALP (alkalen fosfataz)', unit:'U/L', ref:{low:40, high:130}},
+      {key:'totalBilirubin', label:'Total bilirubin', unit:'mg/dL', ref:{low:0.2, high:1.2}},
+      {key:'direktBilirubin', label:'Direkt bilirubin', unit:'mg/dL', ref:{low:0, high:0.3}},
+      {key:'totalKolesterol', label:'Total kolesterol', unit:'mg/dL', ref:{low:0, high:200}},
+      {key:'hdlKolesterol', label:'HDL kolesterol', unit:'mg/dL', ref:{low:40, high:100}},
+      {key:'ldlKolesterol', label:'LDL kolesterol', unit:'mg/dL', ref:{low:0, high:130}},
+      {key:'trigliserid', label:'Trigliserid', unit:'mg/dL', ref:{low:0, high:150}},
+      {key:'sodyum', label:'Sodyum (Na)', unit:'mmol/L', ref:{low:135, high:145}},
+      {key:'potasyum', label:'Potasyum (K)', unit:'mmol/L', ref:{low:3.5, high:5.1}},
+      {key:'klor', label:'Klor (Cl)', unit:'mmol/L', ref:{low:98, high:107}},
+      {key:'kalsiyum', label:'Kalsiyum (Ca)', unit:'mg/dL', ref:{low:8.5, high:10.5}},
+      {key:'fosfor', label:'Fosfor (P)', unit:'mg/dL', ref:{low:2.5, high:4.5}},
+      {key:'demir', label:'Demir (Fe)', unit:'µg/dL', ref:{low:50, high:170}},
+      {key:'ferritin', label:'Ferritin', unit:'ng/mL', ref:{low:30, high:400}},
+      {key:'amilaz', label:'Amilaz', unit:'U/L', ref:{low:25, high:125}},
+      {key:'lipaz', label:'Lipaz', unit:'U/L', ref:{low:13, high:60}}
+    ];
+
+    const el = id=>document.getElementById(id);
+
+    function renderTests(config){
+      const list = el('testsList'); list.innerHTML='';
+      config.forEach((t, idx)=>{
+        const row = document.createElement('div'); row.className='test-row';
+        row.innerHTML = `
+          <div class="meta">
+            <label>${t.label} <span class="badge">${t.unit||''} • Ref: ${t.ref.low} - ${t.ref.high}</span></label>
+            <input type="number" step="any" data-key="${t.key}" placeholder="${t.label} değerini girin">
+          </div>
+          <div style="width:120px;text-align:right">
+            <button class="ghost" data-idx="${idx}" onclick="removeTest(${idx})">Sil</button>
+          </div>
+        `;
+        list.appendChild(row);
+      })
+    }
+
+    function removeTest(i){ config.splice(i,1); renderTests(config); updateConfigTextarea(); }
+    function updateConfigTextarea(){ el('configJson').value = JSON.stringify(config, null, 2); }
+
+    let config = JSON.parse(JSON.stringify(defaultConfig));
+    window.addEventListener('DOMContentLoaded',()=>{
+      renderTests(config);
+      updateConfigTextarea();
+    });
+
+    el('loadDefaults').addEventListener('click',()=>{config = JSON.parse(JSON.stringify(defaultConfig));renderTests(config);updateConfigTextarea();});
+    el('addTestBtn').addEventListener('click',()=>{const key = 'test_'+Date.now(); config.push({key,label:'Yeni Test',unit:'',ref:{low:0,high:0},risk:{}}); renderTests(config); updateConfigTextarea();});
+    el('applyConfig').addEventListener('click',()=>{try{const parsed = JSON.parse(el('configJson').value); if(!Array.isArray(parsed)) throw new Error('JSON dizi olmalı'); config = parsed.map((t,i)=>({ key: t.key || ('t'+i), label: t.label||t.key||('Test '+(i+1)), unit:t.unit||'', ref:{low:Number((t.ref&&t.ref.low)||0), high: Number((t.ref&&t.ref.high)||0)}, risk: t.risk||{} })); renderTests(config); alert('Konfigürasyon uygulandı.');}catch(e){alert('JSON parse hatası: '+e.message)}});
+    el('resetConfig').addEventListener('click',()=>{if(confirm('Varsayılanlara dönülsün mü?')){config = JSON.parse(JSON.stringify(defaultConfig));renderTests(config);updateConfigTextarea();}});
+
+    el('analyzeBtn').addEventListener('click',()=>{
+      const inputs = document.querySelectorAll('#testsList input[type=number]');
+      const results = [];
+      inputs.forEach(inp=>{
+        const key = inp.dataset.key; const val = inp.value.trim();
+        const t = config.find(x=>x.key==key); if(!t) return;
+        const num = val===''?null:Number(val);
+        let status='normal'; let note='Değer normal referans aralığında.';
+        if(num===null){status='missing'; note='Değer girilmemiş.'}
+        else if(t.ref.high>t.ref.low){ if(num < t.ref.low) {status='low'; note = t.risk && t.risk.low ? t.risk.low : 'Referans aralığının altında.'} else if(num > t.ref.high) {status='high'; note = t.risk && t.risk.high ? t.risk.high : 'Referans aralığının üstünde.'} } else { note='Referans aralığı tanımlı değil.' }
+        results.push({key:t.key,label:t.label,unit:t.unit,value:num,status,note,ref:t.ref});
+      });
+      const summaryArea = el('summaryArea'); summaryArea.innerHTML='';
+      if(results.length===0){summaryArea.innerHTML='<p style="color:var(--muted)">Hiç test değeri girilmedi.</p>'; return}
+      results.forEach(r=>{const div = document.createElement('div'); div.className='result ' + (r.status=='high'?'bad':(r.status=='low'?'warn':'good')); div.innerHTML = `<strong>${r.label}</strong><div style="margin-top:6px;color:var(--muted);font-size:13px">Girilen: ${r.value===null?'<em>—</em>':r.value+' '+(r.unit||'')} • Referans: ${r.ref.low} - ${r.ref.high}</div><div style="margin-top:8px">${r.note}</div>`; summaryArea.appendChild(div);});
+      const anyAbnormal = results.some(x=>x.status==='high' || x.status==='low');
+      const adv = document.createElement('div'); adv.style.marginTop='10px'; adv.style.color='var(--muted)';
+      adv.innerHTML = anyAbnormal ? '<strong>Öneri:</strong> Bir veya daha fazla değer referansın dışındadır. Lütfen klinik öykü ve fizik muayene ile birlikte hekiminize başvurunuz.' : '<strong>Öneri:</strong> Tüm girilen değerler referans aralığında gözüküyor. Klinik duruma göre değerlendirme devam edebilir.';
+      summaryArea.appendChild(adv);
+      el('exportBtn').dataset.payload = JSON.stringify({timestamp:new Date().toISOString(),results}, null, 2);
+    });
+
+    el('exportBtn').addEventListener('click',()=>{
+      const payload = el('exportBtn').dataset.payload;
+      if(!payload){alert('Önce analiz yapın.');return}
+      navigator.clipboard.writeText(payload).then(()=>alert('Analiz JSON kopyalandı.')).catch(()=>{prompt('Kopyalama başarısız. Aşağıdaki JSON\'u elle kopyalayın:', payload)});
+    });
+
+    window.removeTest = removeTest;
+  </script>
+</body>
+</html>
