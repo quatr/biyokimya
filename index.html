@@ -1,169 +1,312 @@
 <!doctype html>
 <html lang="tr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Biyokimyasal Test Yorumlayıcı</title>
-  <style>
-    :root{
-      --bg:#0b0f14; --card:#0f1720; --muted:#9aa5b1; --accent:#38bdf8; --good:#16a34a; --warn:#f59e0b; --bad:#ef4444;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    }
-    html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg),#071013);color:#e6eef6}
-    .container{max-width:980px;margin:28px auto;padding:20px}
-    h1{margin:0;font-size:20px}
-    .card{background:linear-gradient(180deg,var(--card),#0b1520);padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,.6)}
-    .grid{display:grid;grid-template-columns:1fr 320px;gap:16px}
-    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
-    input[type=number]{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,.03);background:transparent;color:inherit}
-    .tests-list{display:grid;gap:12px}
-    .test-row{display:flex;gap:10px;align-items:center}
-    .test-row .meta{flex:1}
-    .badge{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.03);font-size:12px;color:var(--muted)}
-    .result{margin-top:12px;padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,.02),transparent)}
-    .result.good{border-left:6px solid var(--good)}
-    .result.warn{border-left:6px solid var(--warn)}
-    .result.bad{border-left:6px solid var(--bad)}
-    .actions{display:flex;gap:8px;margin-top:12px}
-    button{background:var(--accent);border:none;padding:10px 12px;border-radius:8px;color:#042027;cursor:pointer}
-    button.ghost{background:transparent;border:1px solid rgba(255,255,255,.06);color:var(--muted)}
-    .disclaimer{font-size:12px;color:#ffc9c9;margin-top:12px}
-    footer{display:none}
-    @media(max-width:880px){.grid{grid-template-columns:1fr}}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Biyokimyasal Test Yorumlayıcı </title>
+<style>
+:root{
+  --bg1:#f0f9ff; --bg2:#e0f2fe;
+  --card:#ffffff; --text:#0f172a; --muted:#51607a;
+  --good:#16a34a; --warn:#f59e0b; --bad:#dc2626; --accent:#2563eb;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+}
+html,body{margin:0;background:linear-gradient(135deg,var(--bg1),var(--bg2));color:var(--text)}
+.container{max-width:1100px;margin:28px auto;padding:18px}
+h1{margin:0 0 10px;color:#123e8a}
+.grid{display:grid;grid-template-columns:1fr 380px;gap:18px}
+.card{background:var(--card);padding:18px;border-radius:14px;box-shadow:0 10px 30px rgba(2,6,23,.08)}
+label{display:block;font-weight:600;color:var(--muted);margin-top:10px}
+.input-row{display:flex;gap:10px;align-items:center;margin-top:8px}
+input[type=number], select{padding:10px;border-radius:10px;border:1px solid #dbeafe;background:#fbfdff;color:var(--text);width:100%}
+.test-item{padding:12px;border-radius:10px;border:1px solid #eef2ff;background:#fbfdff;margin-bottom:10px}
+.ref{font-size:12px;color:var(--muted);margin-top:6px}
+button.primary{margin-top:14px;padding:12px 16px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--accent),#3b82f6);color:white;font-weight:700;cursor:pointer}
+.result{margin-top:12px;padding:12px;border-radius:12px;font-size:14px}
+.result.good{background:#ecfdf5;border-left:6px solid var(--good)}
+.result.warn{background:#fffbeb;border-left:6px solid var(--warn)}
+.result.bad{background:#fef2f2;border-left:6px solid var(--bad)}
+.small-muted{font-size:13px;color:var(--muted);margin-top:10px}
+.privacy{font-size:13px;color:#475569;text-align:center;margin-top:18px}
+@media(max-width:980px){.grid{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>Biyokimyasal Test Yorumlayıcı</h1>
-    </header>
+<div class="container">
+  <h1>🧪 Biyokimyasal Test Yorumlayıcı </h1>
 
-    <div class="grid">
-      <div class="card">
-        <div class="tests-list" id="testsList"></div>
+  <div class="grid">
+    <div class="card">
+      <!-- Kişisel bilgiler -->
+      <label for="gender">Cinsiyet</label>
+      <select id="gender" aria-label="cinsiyet">
+        <option value="female">Kadın</option>
+        <option value="male">Erkek</option>
+      </select>
 
-        <div class="actions">
-          <button id="analyzeBtn">Sonuçları Yorumla</button>
+      <div class="input-row">
+        <div style="flex:1">
+          <label for="age">Yaş</label>
+          <input type="number" id="age" min="0" max="120" placeholder="Yaş (yıl)" />
         </div>
-
-        <div class="disclaimer card" style="background:transparent;padding:0;border-radius:0">
-          <strong>Uyarı:</strong> Bu araç yalnızca bilgilendirme amaçlıdır ve doktor teşhisinin yerini tutmaz. Anormal sonuçlar için mutlaka bir sağlık profesyoneline başvurun.
+        <div style="width:160px">
+          <label for="pregnancy">Gebelik</label>
+          <select id="pregnancy" aria-label="gebelik">
+            <option value="no">Gebe Değil</option>
+            <option value="yes">Gebe</option>
+          </select>
         </div>
       </div>
 
-      <div>
-        <div class="card">
-          <strong>Analiz Özeti</strong>
-          <div id="summaryArea" style="margin-top:10px">
-            <p style="color:var(--muted)">Henüz analiz yapılmadı.</p>
-          </div>
-        </div>
+      <hr style="margin:14px 0;border:none;border-top:1px solid #eef2ff" />
+
+      <!-- Testler listesi (tüm orijinal testler) -->
+      <div id="testsContainer">
+        <!-- JS dolduracak -->
+      </div>
+
+      <button class="primary" id="analyzeBtn">Sonuçları Yorumla</button>
+      <div class="small-muted">Uyarı: Bu araç bilgilendirme amaçlıdır ve kesin tanı yerine geçmez.</div>
+    </div>
+
+    <div class="card">
+      <strong>Analiz Özeti</strong>
+      <div id="summaryArea" style="margin-top:12px;color:#213547">
+        Henüz analiz yapılmadı.
+      </div>
+
+      <div class="privacy" id="privacyNote">
+        Bu sayfaya girilen bilgiler yalnızca cihazınızda işlenir; kaydedilmez, saklanmaz ve üçüncü kişilerle paylaşılmaz.
       </div>
     </div>
   </div>
+</div>
 
-  <script>
-    const defaultConfig = [
-      {key:'glukoz', label:'Açlık plazma glukozu', unit:'mg/dL', ref:{low:70, high:100}, risk:{high:'Prediyabet veya diyabet riski olabilir.'}},
-      {key:'ure', label:'Üre (BUN)', unit:'mg/dL', ref:{low:10, high:50}, risk:{high:'Böbrek fonksiyonu ve protein yıkımı göstergesi.'}},
-      {key:'kreatinin', label:'Kreatinin', unit:'mg/dL', ref:{low:0.6, high:1.3}, risk:{high:'Böbrek atılım kapasitesi azalmış olabilir.'}},
-      {key:'urikAsit', label:'Ürik asit', unit:'mg/dL', ref:{low:3.5, high:7.2}, risk:{high:'Gut veya böbrek taşı riski olabilir.'}},
-      {key:'totalProtein', label:'Total protein', unit:'g/dL', ref:{low:6.4, high:8.3}},
-      {key:'albumin', label:'Albumin', unit:'g/dL', ref:{low:3.5, high:5.0}},
-      {key:'alt', label:'ALT (alanin aminotransferaz)', unit:'U/L', ref:{low:0, high:45}},
-      {key:'ast', label:'AST (aspartat aminotransferaz)', unit:'U/L', ref:{low:0, high:35}},
-      {key:'ggt', label:'GGT (gamma-glutamil transferaz)', unit:'U/L', ref:{low:0, high:55}},
-      {key:'alp', label:'ALP (alkalen fosfataz)', unit:'U/L', ref:{low:40, high:130}},
-      {key:'totalBilirubin', label:'Total bilirubin', unit:'mg/dL', ref:{low:0.2, high:1.2}},
-      {key:'direktBilirubin', label:'Direkt bilirubin', unit:'mg/dL', ref:{low:0, high:0.3}},
-      {key:'totalKolesterol', label:'Total kolesterol', unit:'mg/dL', ref:{low:0, high:200}},
-      {key:'hdlKolesterol', label:'HDL kolesterol', unit:'mg/dL', ref:{low:40, high:100}},
-      {key:'ldlKolesterol', label:'LDL kolesterol', unit:'mg/dL', ref:{low:0, high:130}},
-      {key:'trigliserid', label:'Trigliserid', unit:'mg/dL', ref:{low:0, high:150}},
-      {key:'sodyum', label:'Sodyum (Na)', unit:'mmol/L', ref:{low:135, high:145}},
-      {key:'potasyum', label:'Potasyum (K)', unit:'mmol/L', ref:{low:3.5, high:5.1}},
-      {key:'klor', label:'Klor (Cl)', unit:'mmol/L', ref:{low:98, high:107}},
-      {key:'kalsiyum', label:'Kalsiyum (Ca)', unit:'mg/dL', ref:{low:8.5, high:10.5}},
-      {key:'fosfor', label:'Fosfor (P)', unit:'mg/dL', ref:{low:2.5, high:4.5}},
-      {key:'demir', label:'Demir (Fe)', unit:'µg/dL', ref:{low:50, high:170}},
-      {key:'ferritin', label:'Ferritin', unit:'ng/mL', ref:{low:30, high:400}},
-      {key:'amilaz', label:'Amilaz', unit:'U/L', ref:{low:25, high:125}},
-      {key:'lipaz', label:'Lipaz', unit:'U/L', ref:{low:13, high:60}}
-    ];
+<script>
+// ----- Test tanımları (varsayılan referanslar) -----
+// Not: bazı testler için cinsiyete/gebeliğe göre düzeltme uygulanacak (kodda).
+const tests = [
+  {key:'glukoz', label:'Açlık plazma glukozu', unit:'mg/dL', ref:{low:70, high:100}},
+  {key:'ure', label:'Üre (BUN)', unit:'mg/dL', ref:{low:10, high:50}},
+  {key:'kreatinin', label:'Kreatinin', unit:'mg/dL', ref:{maleLow:0.7,maleHigh:1.3,femaleLow:0.6,femaleHigh:1.1}},
+  {key:'urikAsit', label:'Ürik asit', unit:'mg/dL', ref:{maleLow:3.5,maleHigh:7.2,femaleLow:2.6,femaleHigh:6.0}},
+  {key:'totalProtein', label:'Total protein', unit:'g/dL', ref:{low:6.4,high:8.3}},
+  {key:'albumin', label:'Albumin', unit:'g/dL', ref:{low:3.5,high:5.0}},
+  {key:'alt', label:'ALT (alanin aminotransferaz)', unit:'U/L', ref:{low:0,high:45}},
+  {key:'ast', label:'AST (aspartat aminotransferaz)', unit:'U/L', ref:{low:0,high:35}},
+  {key:'ggt', label:'GGT (gamma-glutamil transferaz)', unit:'U/L', ref:{low:0,high:55}},
+  {key:'alp', label:'ALP (alkalen fosfataz)', unit:'U/L', ref:{low:40,high:130}},
+  {key:'totalBilirubin', label:'Total bilirubin', unit:'mg/dL', ref:{low:0.2,high:1.2}},
+  {key:'direktBilirubin', label:'Direkt bilirubin', unit:'mg/dL', ref:{low:0,high:0.3}},
+  {key:'totalKolesterol', label:'Total kolesterol', unit:'mg/dL', ref:{low:0,high:200}},
+  {key:'hdlKolesterol', label:'HDL kolesterol', unit:'mg/dL', ref:{maleLow:40,maleHigh:100,femaleLow:50,femaleHigh:100}},
+  {key:'ldlKolesterol', label:'LDL kolesterol', unit:'mg/dL', ref:{low:0, high:130}},
+  {key:'trigliserid', label:'Trigliserid', unit:'mg/dL', ref:{low:0,high:150}},
+  {key:'sodyum', label:'Sodyum (Na)', unit:'mmol/L', ref:{low:135,high:145}},
+  {key:'potasyum', label:'Potasyum (K)', unit:'mmol/L', ref:{low:3.5,high:5.1}},
+  {key:'klor', label:'Klor (Cl)', unit:'mmol/L', ref:{low:98,high:107}},
+  {key:'kalsiyum', label:'Kalsiyum (Ca)', unit:'mg/dL', ref:{low:8.5,high:10.5}},
+  {key:'fosfor', label:'Fosfor (P)', unit:'mg/dL', ref:{low:2.5,high:4.5}},
+  {key:'demir', label:'Demir (Fe)', unit:'µg/dL', ref:{low:50,high:170}},
+  {key:'ferritin', label:'Ferritin', unit:'ng/mL', ref:{maleLow:30,maleHigh:400,femaleLow:10,femaleHigh:150}},
+  {key:'amilaz', label:'Amilaz', unit:'U/L', ref:{low:25,high:125}},
+  {key:'lipaz', label:'Lipaz', unit:'U/L', ref:{low:13,high:60}}
+];
 
-    const el = id=>document.getElementById(id);
+// ----- DOM referansları -----
+const testsContainer = document.getElementById('testsContainer');
+const genderSelect = document.getElementById('gender');
+const pregnancySelect = document.getElementById('pregnancy');
+const ageInput = document.getElementById('age');
+const summaryArea = document.getElementById('summaryArea');
 
-    function renderTests(config){
-      const list = el('testsList'); list.innerHTML='';
-      config.forEach((t)=>{
-        const row = document.createElement('div'); row.className='test-row';
-        row.innerHTML = `
-          <div class="meta">
-            <label>${t.label} <span class="badge">${t.unit||''} • Ref: ${t.ref.low} - ${t.ref.high}</span></label>
-            <input type="number" step="any" data-key="${t.key}" placeholder="${t.label} değerini girin">
-          </div>
-        `;
-        list.appendChild(row);
-      })
+// ----- Gebelik alanını erkek seçilince pasif yap -----
+function handlePregnancyVisibility(){
+  if(genderSelect.value === 'male'){
+    pregnancySelect.value = 'no';
+    pregnancySelect.disabled = true;
+  } else {
+    pregnancySelect.disabled = false;
+  }
+}
+genderSelect.addEventListener('change', handlePregnancyVisibility);
+handlePregnancyVisibility(); // sayfa yüklenince uygula
+
+// ----- Test girdilerini oluştur -----
+function renderTests(){
+  testsContainer.innerHTML = '';
+  tests.forEach(t=>{
+    // determine display refs (placeholders shown; actual evaluation uses gender/age/pregnancy)
+    let refText = '';
+    if(t.ref.hasOwnProperty('low') && t.ref.hasOwnProperty('high')){
+      refText = `${t.ref.low} - ${t.ref.high}`;
+    } else if(t.ref.hasOwnProperty('maleLow')){
+      refText = `Erkek: ${t.ref.maleLow}-${t.ref.maleHigh}, Kadın: ${t.ref.femaleLow}-${t.ref.femaleHigh}`;
     }
+    const div = document.createElement('div');
+    div.className = 'test-item';
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:700">${t.label}</div>
+          <div class="ref">Referans: ${refText} ${t.unit || ''}</div>
+        </div>
+        <div style="width:160px">
+          <input type="number" id="${t.key}" placeholder="Değer">
+        </div>
+      </div>
+    `;
+    testsContainer.appendChild(div);
+  });
+}
+renderTests();
 
-    renderTests(defaultConfig);
-
-    function analyze(){
-      const inputs = document.querySelectorAll('#testsList input[type=number]');
-      let results=[];
-      let missing=false;
-      const values={};
-
-      inputs.forEach(inp=>{
-        const key = inp.dataset.key;
-        const val = inp.value.trim();
-        const t = defaultConfig.find(x=>x.key==key);
-        if(!t) return;
-        const num = val===''?null:Number(val);
-        values[key]=num;
-        let status='normal', note='Değer normal referans aralığında.';
-        if(num===null){missing=true; return;}
-        if(t.ref.high>t.ref.low){
-          if(num < t.ref.low){status='low'; note=t.risk && t.risk.low ? t.risk.low:'Referans aralığının altında.';}
-          else if(num > t.ref.high){status='high'; note=t.risk && t.risk.high ? t.risk.high:'Referans aralığının üstünde.';}
-        }
-        results.push({label:t.label, value:num, unit:t.unit, status, note});
-      });
-
-      // Genel analiz
-      let summary='';
-      if(missing) summary+='Bazı test değerleri girilmediği için analiz sınırlı olabilir. Daha doğru sonuçlar için tüm temel testlerin eklenmesi önerilir.<br><br>';
-
-      // Hastalık ilişkili yorumlar
-      const combs=[];
-      if(values.alt>45 || values.ast>35) combs.push('Karaciğer fonksiyon bozukluğu olasılığı');
-      if(values.ure>50 && values.kreatinin>1.3) combs.push('Böbrek fonksiyon bozukluğu olasılığı');
-      if(values.glukoz>100) combs.push('Prediyabet veya diyabet riski');
-      if(values.trigliserid>150 && values.hdlKolesterol<40) combs.push('Dislipidemi riski');
-      if(values.urikAsit>7.2) combs.push('Gut veya böbrek taşı riski olabilir');
-      if(values.albumin<3.5 && values.totalProtein<6.4) combs.push('Beslenme yetersizliği veya karaciğer sentez fonksiyonunda azalma');
-
-      // Sonuçları göster
-      results.forEach(r=>{
-        summary+=`<div class="result ${r.status==='high'?'bad':r.status==='low'?'warn':'good'}">
-          <strong>${r.label}:</strong> ${r.value!==null?r.value+' '+r.unit:'-'} <br>
-          <em>${r.note}</em>
-        </div>`;
-      });
-
-      if(combs.length>0){
-        summary+='<br><strong>Olası durumlar / ilişkili riskler:</strong><ul>';
-        combs.forEach(c=>summary+=`<li>${c}</li>`);
-        summary+='</ul>';
+// ----- Yardımcı: referans aralığını al (cinsiyet/gebelik/yaşa göre hafif düzeltmeler uygula) -----
+function getRefRange(t, gender, preg, age){
+  // default
+  if(t.ref.hasOwnProperty('low') && t.ref.hasOwnProperty('high')){
+    let low = t.ref.low, high = t.ref.high;
+    // gebelik etkisi örneği:
+    if(preg==='yes'){
+      // bazı testlerde gebelikte normal aralık farklıdır (basitleştirilmiş)
+      if(t.key === 'glukoz'){
+        // gestasyonel diyabet eşiği mantığı handled elsewhere; burada gösterim koru
+        low = 70; high = 92; // normal gebelik açlık sınırı olarak (gösterim amaçlı)
       }
+      if(t.key === 'kreatinin'){
+        high = 1.0; // gebelikte kreatinin referansı genelde daha düşüktür
+      }
+      if(t.key === 'albumin' || t.key === 'totalProtein'){
+        // hemodilüsyon -> alt sınır biraz daha düşük görünür
+        low = (low - 0.3) >= 0 ? low - 0.3 : low;
+      }
+      if(t.key === 'alp'){
+        // ALP gebelikte yükselebilir (plasental kaynak)
+        high = high * 1.5;
+      }
+    }
+    // pediyatrik veya ileri yaş ayarlaması - basit kural (daha ayrıntı istiyorsan ekleriz)
+    if(age && age < 18){
+      // çocuklarda bazı referanslar farklıdır; burada uyarı amaçlı daraltma yapmıyoruz, sadece gösterim notu
+    }
+    return {low, high};
+  } else if(t.ref.hasOwnProperty('maleLow')){
+    // cinsiyete göre aralık
+    const low = (gender==='male')?t.ref.maleLow:t.ref.femaleLow;
+    const high = (gender==='male')?t.ref.maleHigh:t.ref.femaleHigh;
+    // gebelik etkisi: kadın gebe ise kreatinin/ürik asit düşer genelde -> handled elsewhere
+    if(preg==='yes' && t.key==='kreatinin') return {low:low, high:1.0};
+    return {low, high};
+  } else {
+    return {low: NaN, high: NaN};
+  }
+}
 
-      el('summaryArea').innerHTML=summary;
+// ----- Analiz mantığı -----
+function analyze(){
+  const gender = genderSelect.value;
+  const preg = pregnancySelect.value;
+  const age = Number(ageInput.value) || null;
+
+  // topla değerler
+  const vals = {};
+  tests.forEach(t=>{
+    const el = document.getElementById(t.key);
+    const v = el && el.value!=='' ? Number(el.value) : null;
+    vals[t.key] = v;
+  });
+
+  // sonuç HTML hazırla
+  let html = '';
+  let missingAny = false;
+  // tek tek değerlendirme
+  tests.forEach(t=>{
+    const v = vals[t.key];
+    const range = getRefRange(t, gender, preg, age);
+    if(v===null || isNaN(v)){
+      missingAny = true;
+      // gösterim: halen referans aralığını göster
+      html += `<div class="result good"><strong>${t.label}:</strong> -  <br><span class="ref">Referans: ${isNaN(range.low)?'-':range.low} – ${isNaN(range.high)?'-':range.high} ${t.unit||''}</span></div>`;
+      return;
+    }
+    let status = 'good', note = 'Değer referans aralığında.';
+    if(!isNaN(range.low) && !isNaN(range.high)){
+      if(v < range.low){ status='warn'; note='Referans aralığının altında.'; }
+      else if(v > range.high){ status='bad'; note='Referans aralığının üstünde.'; }
+    } else {
+      note = 'Referans aralığı tanımlı değil.';
     }
 
-    el('analyzeBtn').addEventListener('click',analyze);
+    // gebeliğe özgü glukoz uyarısı (kılavuz mantığı)
+    if(t.key==='glukoz' && preg==='yes' && !isNaN(v)){
+      if(v >= 126){
+        status='bad'; note='Gebelikte açlık glukozu ≥126 mg/dL — overt diyabet şüphesi (hekim değerlendirmesi gerek).';
+      } else if(v >= 92){
+        status='warn'; note='Gebelikte açlık glukozu ≥92 mg/dL — gestasyonel diyabet riski (OGTT önerilir).';
+      } else {
+        // normal
+      }
+    }
 
-  </script>
+    html += `<div class="result ${status}"><strong>${t.label}:</strong> ${v} ${t.unit || ''} <br><em>${note}</em><div class="ref">Referans: ${range.low} – ${range.high} ${t.unit||''}</div></div>`;
+  });
+
+  // kombine değerlendirme (bütüncül)
+  const combs = [];
+  // böbrek
+  const crLimit = (gender==='male')?1.3:1.1;
+  if(preg==='yes'){ /* pregn'de handled earlier */ }
+  if(vals.ure !== null && vals.kreatinin !== null && vals.ure > 50 && vals.kreatinin > crLimit){
+    combs.push('Üre ve kreatinin birlikte yüksek: böbrek fonksiyon bozukluğu olasılığı.');
+  }
+  if(vals.alt !== null && vals.ast !== null && (vals.alt > 45 || vals.ast > 40)){
+    combs.push('ALT ve/veya AST yüksek: karaciğer hücre hasarı olasılığı.');
+  }
+  if(vals.trigliserid !== null && vals.hdlKolesterol !== null){
+    // note: our test key for HDL in this dataset is hdlKolesterol; ensure exists
+    if(vals.trigliserid > 150 && vals.hdlKolesterol < ((gender==='male')?40:50)){
+      combs.push('Trigliserid yüksek ve HDL düşük: dislipidemi / metabolik sendrom riski.');
+    }
+  }
+  if(vals.glukoz !== null && vals.glukoz > 100){
+    if(preg==='yes'){
+      // gestasyonel handled above; keep note general
+      combs.push('Yüksek açlık glukozu: glisemik bozukluk riski (gebelikte ≥92 mg/dL önemli).');
+    } else {
+      combs.push('Yüksek açlık glukozu: prediyabet/diyabet riski.');
+    }
+  }
+  if(vals.urikAsit !== null){
+    const uaLimit = (gender==='male')?7.2:6.0;
+    if(vals.urikAsit > uaLimit) combs.push('Ürik asit yüksek: gut veya böbrek taşı riski olabilir.');
+  }
+  if(vals.albumin !== null && vals.totalProtein !== null){
+    if(vals.albumin < 3.5 && vals.totalProtein < 6.4) combs.push('Albumin ve total protein düşük: beslenme yetersizliği veya karaciğer sentez fonksiyonunda azalma olasılığı.');
+  }
+
+  if(combs.length){
+    html += `<div style="margin-top:8px"><strong>Olası ilişkili durumlar / genel değerlendirme:</strong><ul>`;
+    combs.forEach(c=> html += `<li style="margin-top:6px">${c}</li>`);
+    html += `</ul></div>`;
+  } else {
+    if(!missingAny) html += `<div class="result good">Girilen verilere göre belirgin bir toplu risk saptanmadı.</div>`;
+    else html += `<div class="small-muted">Bazı testler girilmedi; daha kapsamlı değerlendirme için tüm temel testlerin girilmesi önerilir.</div>`;
+  }
+
+  // son not
+  html += `<div class="small-muted" style="margin-top:10px"><strong>Not:</strong> Bu değerlendirme bilgi amaçlıdır. Kesin tanı için klinik değerlendirme, ilave testler ve hekim görüşü gereklidir.</div>`;
+
+  summaryArea.innerHTML = html;
+}
+
+// ----- Buton dinleyici -----
+document.getElementById('analyzeBtn').addEventListener('click', analyze);
+
+// ----- küçük uyarlamalar: bazı inputlara farklı id kullanımı (hdl field key) -----
+// ensure hdl field key matches used keys (we used hdlKolesterol earlier in logic). If user didn't have that test key, create alias
+// In our tests list, key is 'hdlKolesterol' — ensure ID used matches.
+</script>
 </body>
 </html>
+
 
