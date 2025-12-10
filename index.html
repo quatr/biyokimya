@@ -132,47 +132,50 @@ function handlePregnancyVisibility(){
 genderSelect.addEventListener('change', handlePregnancyVisibility);
 handlePregnancyVisibility();
 
+function getLimits(ref, gender){
+  if(ref.includes('E:')){
+    const parts = ref.split('/');
+    const male = parts[0].replace('E:','').trim();
+    const female = parts[1].replace('K:','').trim();
+    const use = gender==='male'? male : female;
+    const [min,max] = use.split('–').map(Number);
+    return {min,max};
+  }
+  const [min,max] = ref.split('–').map(Number);
+  return {min,max};
+}
+
 function analyze(){
-  const med=document.getElementById('medCondition').value.toLowerCase();
-  const gender=genderSelect.value;
-  const preg=pregnancySelect.value;
+  const genderVal = document.getElementById('gender').value;
+  const pregVal = document.getElementById('pregnancy').value;
+  const med = document.getElementById('medCondition').value.toLowerCase();
   let out='';
 
-  const g=parseFloat(glucose.value);
-  if(!isNaN(g)){
-    if(preg==='yes' && g>=92) out+=`<div class='result warn'>Gebelikte glukoz ≥92 mg/dL: gestasyonel diyabet riski.</div>`;
-    else if(g>=126) out+=`<div class='result bad'>Glukoz ≥126 mg/dL: Diyabet riski.</div>`;
-    else if(g>=100) out+=`<div class='result warn'>Glukoz sınırda yüksek.</div>`;
+  tests.forEach(t=>{
+    const el = document.getElementById(t.key);
+    if(!el) return;
+    const v = parseFloat(el.value);
+    if(isNaN(v)) return;
 
+    const r = getLimits(t.ref, genderVal);
+
+    if(v < r.min)
+      out += `<div class="result warn">${t.label}: <b>DÜŞÜK</b> (${v} ${t.unit})</div>`;
+    else if(v > r.max)
+      out += `<div class="result bad">${t.label}: <b>YÜKSEK</b> (${v} ${t.unit})</div>`;
+    else
+      out += `<div class="result good">${t.label}: <b>NORMAL</b> (${v} ${t.unit})</div>`;
+  });
+
+  const gEl = document.getElementById('glucose');
+  if(gEl && !isNaN(parseFloat(gEl.value))){
     if(med.includes('kortikosteroid') || med.includes('steroid')){
-      out+=`<div class='result warn'>Not: Kortikosteroid kullanımı glukoz düzeylerinde artışa neden olabilir.</div>`;
+      out += `<div class="result warn">Not: Kortikosteroid kullanımı glukozu yükseltebilir.</div>`;
     }
   }
 
-  const c=parseFloat(creatinine.value);
-  if(!isNaN(c)){
-    const limit=gender==='male'?1.3:1.1;
-    if(preg==='yes' && c>1.0) out+=`<div class='result warn'>Gebelikte kreatinin yüksek olabilir.</div>`;
-    else if(c>limit) out+=`<div class='result warn'>Kreatinin yüksek: böbrek fonksiyonu etkilenmiş olabilir.</div>`;
-  }
-
-  const u=parseFloat(urea.value);
-  const ur=parseFloat(uric.value);
-  if(!isNaN(u)&&!isNaN(c)&&u>50&&c>(gender==='male'?1.3:1.1)){
-    out+=`<div class='result bad'>Üre ve kreatinin birlikte yüksek: böbrek fonksiyon bozukluğu olasılığı.</div>`;
-  }
-
-  if(!isNaN(ur)&&ur>7){
-    out+=`<div class='result warn'>Ürik asit yüksek: gut veya böbrek taşı riski olabilir.</div>`;
-  }
-
-  const a=parseFloat(alt.value), s=parseFloat(ast.value);
-  if(!isNaN(a)&&!isNaN(s)&&a>45&&s>40){
-    out+=`<div class='result warn'>ALT ve AST birlikte yüksek: karaciğer hasarı olasılığı.</div>`;
-  }
-
-  if(out==='') out='Girilen verilere göre anlamlı bir risk saptanmadı veya veri eksik.';
-  resultArea.innerHTML=out;
+  if(out==='') out='Yeterli veri girilmedi.';
+  document.getElementById('resultArea').innerHTML = out;
 }
 </script>
 </body>
@@ -181,6 +184,9 @@ function analyze(){
 <div class="privacy-note" style="text-align:center;font-size:13px;color:#555;margin-top:24px;">
   Bu sayfaya girilen bilgiler yalnızca cihazınızda işlenir; kaydedilmez, saklanmaz ve üçüncü kişilerle paylaşılmaz. Site demo amaçlıdır ve kişisel verilerin korunması (KVKK) ilkelerine uygun şekilde tasarlanmıştır.
 </div>
+
+
+
 
 
 
