@@ -151,6 +151,8 @@ function analyze(){
   const med = document.getElementById('medCondition').value.toLowerCase();
   let out='';
 
+  let astVal=null, altVal=null, alpVal=null, ggtVal=null, glucoseVal=null;
+
   tests.forEach(t=>{
     const el = document.getElementById(t.key);
     if(!el) return;
@@ -158,6 +160,12 @@ function analyze(){
     if(isNaN(v)) return;
 
     const r = getLimits(t.ref, genderVal);
+
+    if(t.key==='ast') astVal=v;
+    if(t.key==='alt') altVal=v;
+    if(t.key==='alp') alpVal=v;
+    if(t.key==='ggt') ggtVal=v;
+    if(t.key==='glucose') glucoseVal=v;
 
     if(v < r.min)
       out += `<div class="result warn">${t.label}: <b>DÜŞÜK</b> (${v} ${t.unit})</div>`;
@@ -167,11 +175,27 @@ function analyze(){
       out += `<div class="result good">${t.label}: <b>NORMAL</b> (${v} ${t.unit})</div>`;
   });
 
-  const gEl = document.getElementById('glucose');
-  if(gEl && !isNaN(parseFloat(gEl.value))){
-    if(med.includes('kortikosteroid') || med.includes('steroid')){
-      out += `<div class="result warn">Not: Kortikosteroid kullanımı glukozu yükseltebilir.</div>`;
+  // Klinik ilişkilendirmeler
+  if(glucoseVal!==null){
+    if(pregVal==='yes' && glucoseVal>=92){
+      out+=`<div class="result warn">Yorum: Gebelikte yüksek açlık glukozu gestasyonel diyabet açısından anlamlı olabilir.</div>`;
     }
+    if(glucoseVal>=126){
+      out+=`<div class="result bad">Yorum: Açlık glukozu ≥126 mg/dL, diyabet riski ile uyumludur.</div>`;
+    } else if(glucoseVal>=100){
+      out+=`<div class="result warn">Yorum: Açlık glukozu sınırda yüksek (prediyabet aralığı).</div>`;
+    }
+    if(med.includes('kortikosteroid') || med.includes('steroid')){
+      out+=`<div class="result warn">Not: Kortikosteroid kullanımı glukoz yüksekliğine katkıda bulunabilir.</div>`;
+    }
+  }
+
+  if(astVal!==null && altVal!==null && astVal>35 && altVal>45){
+    out+=`<div class="result warn">Yorum: AST ve ALT birlikte yüksekliği hepatosit hasarı ile ilişkili olabilir.</div>`;
+  }
+
+  if(alpVal!==null && ggtVal!==null && alpVal>130 && ggtVal>55){
+    out+=`<div class="result warn">Yorum: ALP ve GGT birlikte yüksekliği kolestaz / safra yolu patolojilerini düşündürebilir.</div>`;
   }
 
   if(out==='') out='Yeterli veri girilmedi.';
@@ -184,6 +208,8 @@ function analyze(){
 <div class="privacy-note" style="text-align:center;font-size:13px;color:#555;margin-top:24px;">
   Bu sayfaya girilen bilgiler yalnızca cihazınızda işlenir; kaydedilmez, saklanmaz ve üçüncü kişilerle paylaşılmaz. Site demo amaçlıdır ve kişisel verilerin korunması (KVKK) ilkelerine uygun şekilde tasarlanmıştır.
 </div>
+
+
 
 
 
