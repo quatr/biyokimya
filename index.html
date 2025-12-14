@@ -148,25 +148,21 @@ function getLimits(ref, gender){
 function analyze(){
   const genderVal = document.getElementById('gender').value;
   const pregVal = document.getElementById('pregnancy').value;
+  const ageVal = parseInt(document.getElementById('age').value || '0');
   const med = document.getElementById('medCondition').value.toLowerCase();
   let out='';
 
-  let astVal=null, altVal=null, alpVal=null, ggtVal=null, glucoseVal=null;
-
+  let vals = {};
   tests.forEach(t=>{
     const el = document.getElementById(t.key);
-    if(!el) return;
-    const v = parseFloat(el.value);
-    if(isNaN(v)) return;
+    if(el && el.value!=='' && !isNaN(el.value)) vals[t.key]=parseFloat(el.value);
+  });
 
+  // --- Tek tek YÜKSEK / DÜŞÜK / NORMAL ---
+  tests.forEach(t=>{
+    const v = vals[t.key];
+    if(v===undefined) return;
     const r = getLimits(t.ref, genderVal);
-
-    if(t.key==='ast') astVal=v;
-    if(t.key==='alt') altVal=v;
-    if(t.key==='alp') alpVal=v;
-    if(t.key==='ggt') ggtVal=v;
-    if(t.key==='glucose') glucoseVal=v;
-
     if(v < r.min)
       out += `<div class="result warn">${t.label}: <b>DÜŞÜK</b> (${v} ${t.unit})</div>`;
     else if(v > r.max)
@@ -175,41 +171,53 @@ function analyze(){
       out += `<div class="result good">${t.label}: <b>NORMAL</b> (${v} ${t.unit})</div>`;
   });
 
-  // Klinik ilişkilendirmeler
-
-  // Bilinen hastalık / ilaç etkileri (böbrek örneği)
-  if(med.includes('böbrek') || med.includes('renal') || med.includes('kronik böbrek')){
-    const uVal = parseFloat(document.getElementById('urea')?.value);
-    const cVal = parseFloat(document.getElementById('creatinine')?.value);
-    if(!isNaN(uVal) && uVal>50){
-      out+=`<div class="result warn">Not: Bilinen böbrek hastalığı varlığında üre yüksekliği beklenebilir.</div>`;
-    }
-    if(!isNaN(cVal) && cVal>(genderVal==='male'?1.3:1.1)){
-      out+=`<div class="result warn">Not: Böbrek hastalığı kreatinin yüksekliğine katkıda bulunabilir.</div>`;
+  // --- Hepatoselüler hasar (ALT / AST) ---
+  if(vals.alt!==undefined && vals.ast!==undefined){
+    if(vals.alt>45 || vals.ast>35){
+      out += `<div class="result warn">ALT ve/veya AST yüksekliği hepatoselüler hasar ile uyumlu olabilir.</div>`;
     }
   }
 
+  // --- Kolestaz (ALP / GGT) ---
+  if(vals.alp!==undefined && vals.ggt!==undefined){
+    if(vals.alp>130 && vals.ggt>55){
+      out += `<div class="result warn">ALP ve GGT birlikte yüksek: kolestaz veya safra yolu patolojisi düşünülebilir.</div>`;
+    }
+  }
 
-  if(glucoseVal!==null){
-    if(pregVal==='yes' && glucoseVal>=92){
-      out+=`<div class="result warn">Yorum: Gebelikte yüksek açlık glukozu gestasyonel diyabet açısından anlamlı olabilir.</div>`;
-    }
-    if(glucoseVal>=126){
-      out+=`<div class="result bad">Yorum: Açlık glukozu ≥126 mg/dL, diyabet riski ile uyumludur.</div>`;
-    } else if(glucoseVal>=100){
-      out+=`<div class="result warn">Yorum: Açlık glukozu sınırda yüksek (prediyabet aralığı).</div>`;
-    }
+  // --- Glukoz / Diyabet ---
+  if(vals.glucose!==undefined){
+    if(pregVal==='yes' && vals.glucose>=92)
+      out += `<div class="result warn">Gebelikte açlık glukozu ≥92 mg/dL: gestasyonel diyabet riski.</div>`;
+    else if(vals.glucose>=126)
+      out += `<div class="result bad">Açlık glukozu ≥126 mg/dL: diyabet ile uyumlu olabilir.</div>`;
+    else if(vals.glucose>=100)
+      out += `<div class="result warn">Açlık glukozu sınırda yüksek (prediyabet).</div>`;
+
     if(med.includes('kortikosteroid') || med.includes('steroid')){
-      out+=`<div class="result warn">Not: Kortikosteroid kullanımı glukoz yüksekliğine katkıda bulunabilir.</div>`;
+      out += `<div class="result warn">Kortikosteroid kullanımı glukoz yüksekliğine katkıda bulunabilir.</div>`;
     }
   }
 
-  if(astVal!==null && altVal!==null && astVal>35 && altVal>45){
-    out+=`<div class="result warn">Yorum: AST ve ALT birlikte yüksekliği hepatosit hasarı ile ilişkili olabilir.</div>`;
+  // --- Böbrek fonksiyonu ---
+  if(vals.urea!==undefined && vals.creatinine!==undefined){
+    const crLimit = genderVal==='male'?1.3:1.1;
+    if(vals.urea>50 && vals.creatinine>crLimit){
+      out += `<div class="result bad">Üre ve kreatinin birlikte yüksek: böbrek fonksiyon bozukluğu olasılığı.</div>`;
+    }
   }
 
-  if(alpVal!==null && ggtVal!==null && alpVal>130 && ggtVal>55){
-    out+=`<div class="result warn">Yorum: ALP ve GGT birlikte yüksekliği kolestaz / safra yolu patolojilerini düşündürebilir.</div>`;
+  if(vals.creatinine!==undefined){
+    if(ageVal>=60){
+      out += `<div class="result warn">Yaş da göz önünde bulundurulduğunda normal gibi görünen kreatinin, yaşlı bireylerde azalmış kas kütlesi nedeniyle böbrek fonksiyon kaybına işaret edebilir.</div>`;
+    }
+  }
+
+  if(med.includes('böbrek')){
+    if(vals.urea!==undefined && vals.urea>50)
+      out += `<div class="result warn">Bilinen böbrek hastalığı varlığında üre yüksekliği beklenebilir.</div>`;
+    if(vals.creatinine!==undefined)
+      out += `<div class="result warn">Bilinen böbrek hastalığı kreatinin düzeyini etkileyebilir.</div>`;
   }
 
   if(out==='') out='Yeterli veri girilmedi.';
@@ -222,7 +230,6 @@ function analyze(){
 <div class="privacy-note" style="text-align:center;font-size:13px;color:#555;margin-top:24px;">
   Bu sayfaya girilen bilgiler yalnızca cihazınızda işlenir; kaydedilmez, saklanmaz ve üçüncü kişilerle paylaşılmaz. Site demo amaçlıdır ve kişisel verilerin korunması (KVKK) ilkelerine uygun şekilde tasarlanmıştır.
 </div>
-
 
 
 
