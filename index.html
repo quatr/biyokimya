@@ -176,6 +176,20 @@ function analyze(){
   });
 
   // Klinik ilişkilendirmeler
+
+  // Bilinen hastalık / ilaç etkileri (böbrek örneği)
+  if(med.includes('böbrek') || med.includes('renal') || med.includes('kronik böbrek')){
+    const uVal = parseFloat(document.getElementById('urea')?.value);
+    const cVal = parseFloat(document.getElementById('creatinine')?.value);
+    if(!isNaN(uVal) && uVal>50){
+      out+=`<div class="result warn">Not: Bilinen böbrek hastalığı varlığında üre yüksekliği beklenebilir.</div>`;
+    }
+    if(!isNaN(cVal) && cVal>(genderVal==='male'?1.3:1.1)){
+      out+=`<div class="result warn">Not: Böbrek hastalığı kreatinin yüksekliğine katkıda bulunabilir.</div>`;
+    }
+  }
+
+
   if(glucoseVal!==null){
     if(pregVal==='yes' && glucoseVal>=92){
       out+=`<div class="result warn">Yorum: Gebelikte yüksek açlık glukozu gestasyonel diyabet açısından anlamlı olabilir.</div>`;
@@ -208,6 +222,7 @@ function analyze(){
 <div class="privacy-note" style="text-align:center;font-size:13px;color:#555;margin-top:24px;">
   Bu sayfaya girilen bilgiler yalnızca cihazınızda işlenir; kaydedilmez, saklanmaz ve üçüncü kişilerle paylaşılmaz. Site demo amaçlıdır ve kişisel verilerin korunması (KVKK) ilkelerine uygun şekilde tasarlanmıştır.
 </div>
+
 
 
 
